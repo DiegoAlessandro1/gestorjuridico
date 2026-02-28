@@ -1,0 +1,30 @@
+# ============================================================================
+# GESTOR JURÍDICO MVP - DEPENDÊNCIAS
+# ============================================================================
+# Descrição: Todas as bibliotecas necessárias para executar a aplicação Flask
+#            com MongoDB. Instale com: pip install -r requirements.txt
+
+# FRAMEWORK WEB
+Flask==3.0.0                    # Framework web leve e flexível
+Flask-Cors==4.0.0              # Permitir requisições CORS (segurança)
+
+# BANCO DE DADOS
+pymongo==4.6.0                 # Driver MongoDB para Python
+python-dotenv==1.0.0           # Gerenciar variáveis de ambiente (.env)
+
+# SEGURANÇA
+Werkzeug==3.0.1                # Ferramentas de segurança e hashing
+cryptography==41.0.7           # Criptografia para dados sensíveis
+
+# VALIDAÇÃO DE DADOS
+python-dateutil==2.8.2         # Manipulação de datas e horas
+
+# AMBIENTE DE PRODUÇÃO
+gunicorn==21.2.0               # Servidor WSGI para deploy em produção
+
+# DESENVOLVIMENTO (opcional)
+python-dotenv==1.0.0           # Carregar .env em desenvolvimento
+ 
+# Geração de PDF (opcional)
+reportlab>=4.0
+PyPDF2>=3.0

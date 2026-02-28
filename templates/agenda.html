@@ -1,0 +1,267 @@
+<!--
+============================================================================
+TEMPLATE - AGENDA DE COMPROMISSOS
+============================================================================
+Arquivo: templates/agenda.html
+Propósito: Página para visualizar, criar e gerenciar compromissos
+
+Funcionalidades:
+1. Tabela com lista de compromissos
+2. Modal para cadastro e edição
+3. Integração opcional com clientes
+4. Suporte a tipos: Reunião, Consulta, Audiência
+============================================================================
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Agenda{% endblock %}
+{% block page_title %}
+    <div class="d-flex justify-content-between align-items-center" style="gap: 2rem;">
+        <span>Agenda</span>
+        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalAgenda">
+            <i class="bi bi-plus-circle"></i> Novo Compromisso
+        </button>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div id="agendaPrazoAlert" class="mb-3"></div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3" style="gap:.75rem;">
+                <button class="btn btn-outline-secondary btn-sm" type="button" id="calPrevMonth">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <h5 class="mb-0" id="calendarMonthLabel">Calendário</h5>
+                <button class="btn btn-outline-secondary btn-sm" type="button" id="calNextMonth">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+
+            <div class="d-flex flex-nowrap align-items-center overflow-auto mb-2" style="gap:.3rem; white-space: nowrap;">
+                <span class="badge bg-primary">Audiência</span>
+                <span class="badge bg-warning text-dark">Prazo</span>
+                <span class="badge bg-danger">Pagamento</span>
+                <span class="badge bg-success">Recebimento</span>
+                <span class="badge bg-info text-dark">Consulta</span>
+                <span class="badge bg-light text-danger border border-danger-subtle">Feriado</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle mb-0" id="agendaCalendarTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-center">Dom</th>
+                            <th class="text-center">Seg</th>
+                            <th class="text-center">Ter</th>
+                            <th class="text-center">Qua</th>
+                            <th class="text-center">Qui</th>
+                            <th class="text-center">Sex</th>
+                            <th class="text-center">Sáb</th>
+                        </tr>
+                    </thead>
+                    <tbody id="agendaCalendarBody"></tbody>
+                </table>
+            </div>
+            <small class="text-muted d-block mt-2">Clique em um dia para filtrar compromissos.</small>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body border-bottom">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="filtroRecebimentosAuto">
+                        <label class="form-check-label" for="filtroRecebimentosAuto">
+                            Mostrar apenas recebimentos automáticos
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label mb-1">Cliente (recebimentos automáticos)</label>
+                    <select class="form-select form-select-sm" id="filtroRecebimentoCliente" disabled>
+                        <option value="">Todos os clientes</option>
+                    </select>
+                </div>
+                <div class="col-md-3 text-md-end">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="limparFiltroRecebimento">
+                        <i class="bi bi-arrow-clockwise"></i> Limpar filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="tabelaAgenda">
+                <thead class="table-light">
+                    <tr>
+                        <th>Data</th>
+                        <th>Hora</th>
+                        <th>Tipo</th>
+                        <th>Modalidade</th>
+                        <th>Título</th>
+                        <th>Cliente</th>
+                        <th>Ref. Processo/Contrato</th>
+                        <th>Status</th>
+                        <th>Local</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="agendaTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        window.__agendaCompromissos = {{ compromissos|tojson }};
+    </script>
+
+    <!-- Modal de cadastro/edição -->
+    <div class="modal fade" id="modalAgenda" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalAgendaTitle">Novo Compromisso</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <form id="formAgenda">
+                        <input type="hidden" id="compromissoId">
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Título *</label>
+                                <input type="text" class="form-control" id="titulo" placeholder="Ex: Audiência de conciliação" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tipo *</label>
+                                <select class="form-select" id="tipo" required>
+                                    <option value="">Selecionar...</option>
+                                    <option value="Audiência">Audiência</option>
+                                    <option value="Prazo">Prazo</option>
+                                    <option value="Pagamento">Pagamento</option>
+                                    <option value="Recebimento">Recebimento</option>
+                                    <option value="Consulta">Consulta</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3" id="campoDataCompromisso">
+                                <label class="form-label">Data *</label>
+                                <input type="date" class="form-control" id="data" required>
+                            </div>
+                            <div class="col-md-4 mb-3" id="campoHoraCompromisso">
+                                <label class="form-label">Hora *</label>
+                                <input type="time" class="form-control" id="hora" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" id="status">
+                                    <option value="Agendado">Agendado</option>
+                                    <option value="Concluído">Concluído</option>
+                                    <option value="Cancelado">Cancelado</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="prazoFields" style="display:none;">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Fórum de competência *</label>
+                                    <input type="text" class="form-control" id="forum_competencia" placeholder="Ex: Fórum Central Cível">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Número do processo *</label>
+                                    <input type="text" class="form-control" id="numero_processo" placeholder="0000000-00.0000.0.00.0000">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Tipo de prazo *</label>
+                                    <select class="form-select" id="tipo_prazo">
+                                        <option value="">Selecionar...</option>
+                                        <option value="Processual">Processual</option>
+                                        <option value="Administrativo">Administrativo</option>
+                                        <option value="Contratual">Contratual</option>
+                                        <option value="Recursal">Recursal</option>
+                                        <option value="Outro">Outro</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Data de publicação *</label>
+                                    <input type="date" class="form-control" id="data_publicacao">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Dias úteis do prazo *</label>
+                                    <select class="form-select" id="dias_uteis_prazo">
+                                        <option value="">Selecionar...</option>
+                                        {% for i in range(1, 26) %}
+                                            <option value="{{ i }}">{{ i }} dia{{ 's' if i > 1 else '' }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row" id="audienciaFields" style="display:none;">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tipo de audiência *</label>
+                                <select class="form-select" id="tipo_audiencia">
+                                    <option value="">Selecionar...</option>
+                                    <option value="Instrução">Instrução</option>
+                                    <option value="Conciliação">Conciliação</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Modalidade da audiência *</label>
+                                <select class="form-select" id="formato_audiencia">
+                                    <option value="">Selecionar...</option>
+                                    <option value="Presencial">Presencial</option>
+                                    <option value="Virtual">Virtual</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row" id="audienciaVirtualFields" style="display:none;">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Link da reunião virtual *</label>
+                                <input type="url" class="form-control" id="link_reuniao_virtual" placeholder="https://...">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Cliente (opcional)</label>
+                                <select class="form-select" id="cliente_id">
+                                    <option value="">Selecionar cliente...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3" id="campoLocalCompromisso">
+                                <label class="form-label">Local</label>
+                                <input type="text" class="form-control" id="local" placeholder="Ex: Fórum Central">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Observações</label>
+                            <textarea class="form-control" id="observacoes" rows="3" placeholder="Detalhes adicionais..."></textarea>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="salvarCompromisso()">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{{ url_for('static', filename='js/agenda.js') }}"></script>
+{% endblock %}

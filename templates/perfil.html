@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Perfil{% endblock %}
+{% block page_title %}
+    <div class="d-flex justify-content-between align-items-center" style="gap: 2rem;">
+        <span>Perfil do Usuário</span>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex flex-column">
+                <h5 class="mb-3">Foto do usuário</h5>
+
+                <div class="mb-4">
+                    {% if foto_path %}
+                        <img src="{{ url_for('static', filename=foto_path) }}" alt="Foto do usuário" class="img-thumbnail" style="max-width: 220px; max-height: 220px; object-fit: cover;">
+                    {% else %}
+                        <div class="border rounded d-flex align-items-center justify-content-center text-muted" style="width:220px;height:220px;">
+                            Sem foto cadastrada
+                        </div>
+                    {% endif %}
+                </div>
+
+                <form method="POST" enctype="multipart/form-data" class="d-flex flex-column flex-grow-1">
+                    <div class="mb-3">
+                        <label for="foto" class="form-label">Selecionar foto</label>
+                        <input class="form-control" type="file" id="foto" name="foto" accept=".jpg,.jpeg,.png,.webp" required>
+                        <small class="text-muted">Formatos aceitos: JPG, JPEG, PNG e WEBP.</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-auto align-self-start">
+                        <i class="bi bi-upload"></i> Salvar foto
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex flex-column">
+                <h5 class="mb-3">Alterar senha</h5>
+                <form method="POST" class="d-flex flex-column flex-grow-1">
+                    <input type="hidden" name="acao" value="alterar_senha">
+                    <div class="mb-3">
+                        <label for="senha_atual" class="form-label">Senha antiga</label>
+                        <input class="form-control" type="password" id="senha_atual" name="senha_atual" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="nova_senha" class="form-label">Nova senha</label>
+                        <input class="form-control" type="password" id="nova_senha" name="nova_senha" minlength="6" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmar_senha" class="form-label">Confirmar nova senha</label>
+                        <input class="form-control" type="password" id="confirmar_senha" name="confirmar_senha" minlength="6" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-auto align-self-start">
+                        <i class="bi bi-key"></i> Alterar senha
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

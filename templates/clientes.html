@@ -1,0 +1,574 @@
+{% raw %}
+<!--
+============================================================================
+TEMPLATE - GESTÃO DE CLIENTES
+============================================================================
+Arquivo: templates/clientes.html
+Propósito: Página com tabela de clientes e modal para adicionar/editar
+
+Funcionalidades:
+1. Tabela responsiva com dados dos clientes (&#123;% for cliente in clientes %&#125;)
+2. Modal Bootstrap para cadastro de novos clientes
+3. Chamadas AJAX para salvar dados sem recarregar página
+4. Conversão automática do ObjectId em String (feita no Python)
+5. Sistema de alertas/validação no frontend
+
+Como funciona:
+- &#123;% for cliente in clientes %&#125; itera sobre lista vinda do Python
+- &#123;&#123; cliente._id &#125;&#125; usa o ID convertido para String
+- onclick="editarCliente(&#123;&#123; cliente._id &#125;&#125;)" passa dados ao JavaScript
+- fetch() faz requisição AJAX sem recarregar a página
+============================================================================
+-->
+{% endraw %}
+
+{% extends "base.html" %}
+
+{% block title %}Clientes{% endblock %}
+{% block page_title %}
+    <div class="d-flex justify-content-between align-items-center" style="gap: 2rem;">
+        <span>Gestão de Clientes</span>
+        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalCliente">
+            <i class="bi bi-plus-circle"></i> Novo Cliente
+        </button>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <!-- ================================================================
+         TABELA DE CLIENTES
+         ================================================================ -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nome</th>
+                        <th>Telefone</th>
+                        <th>CPF/CNPJ</th>
+                        <th>Cidade/UF</th>
+                        <th>Pagamento</th>
+                        <th>Data Cadastro</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- LOOP JINJA2: Itera sobre cada cliente
+                         
+                         &#123;&#123; cliente._id &#125;&#125; = ObjectId convertido para String no Python
+                         O Frontend recebe: "507f1f77bcf86cd799439011" (string)
+                    <!-- Modal para visualizar processos de um cliente -->
+                    -->
+                    {% if clientes %}
+                        {% for cliente in clientes %}
+                            <tr>
+                                <td>
+                                    <strong>{{ cliente.nome }}</strong>
+                                    <script type="application/json" id="cliente-{{ cliente._id }}">{{ cliente|tojson }}</script>
+                                </td>
+                                <td>
+                                    {{ cliente.telefone or '-' }}
+                                </td>
+                                <td>{{ cliente.cpf_cnpj or '-' }}</td>
+                                <td>
+                                    {{ cliente.cidade }}/{{ cliente.uf }}
+                                </td>
+                                <td>
+                                    {% if cliente.forma_pagamento or cliente.dia_vencimento or cliente.referencia_pagamento %}
+                                        <div class="small">
+                                            {% if cliente.forma_pagamento %}
+                                                <span class="badge bg-light text-dark border">{{ cliente.forma_pagamento }}</span>
+                                            {% endif %}
+                                            {% if cliente.referencia_pagamento %}
+                                                <div class="text-muted">Ref.: {{ cliente.referencia_pagamento }}</div>
+                                            {% endif %}
+                                            {% if cliente.dia_vencimento %}
+                                                <div class="text-muted">Venc.: dia {{ cliente.dia_vencimento }}</div>
+                                            {% endif %}
+                                            {% if cliente.numero_parcelas %}
+                                                {% set total_parcelas = cliente.numero_parcelas %}
+                                                {% set pagas = cliente.parcelas_pagamento|selectattr('paga')|list|length if cliente.parcelas_pagamento else 0 %}
+                                                {% set progresso = ((pagas / total_parcelas) * 100) if total_parcelas else 0 %}
+                                                <div class="text-muted">Parcelas: {{ pagas }}/{{ total_parcelas }} pagas</div>
+                                                <div class="progress mt-1" style="height: 6px;">
+                                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ progresso|round(0, 'floor') }}%;" aria-valuenow="{{ progresso|round(0, 'floor') }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                                {% if cliente.valor_honorarios and total_parcelas > 0 %}
+                                                    {% set valor_total = cliente.valor_honorarios|float %}
+                                                    {% set valor_por_parcela = valor_total / total_parcelas %}
+                                                    {% set valor_pago = valor_por_parcela * pagas %}
+                                                    {% set valor_restante = valor_total - (valor_por_parcela * pagas) %}
+                                                    <div class="text-muted">Valor pago: {{ (valor_pago if valor_pago > 0 else 0)|brl_currency }}</div>
+                                                    <div class="text-muted">Valor restante: {{ (valor_restante if valor_restante > 0 else 0)|brl_currency }}</div>
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <!-- Formata data para exibição legível -->
+                                    {% if cliente.data_cadastro %}
+                                        {{ cliente.data_cadastro.strftime('%d/%m/%Y') }}
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <div class="cliente-actions-grid">
+                                        <!-- Botão Editar: Abre modal com dados -->
+                                        <button class="btn btn-sm btn-primary btn-action" onclick="editarCliente('{{ cliente._id }}')">
+                                            <i class="bi bi-pencil"></i> Editar
+                                        </button>
+
+                                        <!-- Botão Deletar: Confirma antes de deletar -->
+                                        <button class="btn btn-sm btn-danger btn-action" onclick="deletarCliente('{{ cliente._id }}', '{{ cliente.nome }}')">
+                                            <i class="bi bi-trash"></i> Deletar
+                                        </button>
+
+                                        <!-- Botão Ver Processos: Carrega processos via AJAX -->
+                                        <button class="btn btn-sm btn-info btn-action" onclick="verProcessosCliente('{{ cliente._id }}')">
+                                            <i class="bi bi-file-text"></i> Processos
+                                        </button>
+
+                                        <!-- Botão Anotações: abre editor de anotações específicas do cliente -->
+                                        <button class="btn btn-sm btn-secondary btn-action" onclick="abrirAnotacoesCliente('{{ cliente._id }}')">
+                                            <i class="bi bi-stickies"></i> Anotações
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <!-- Mensagem quando não há clientes -->
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <p class="mt-2">Nenhum cliente cadastrado</p>
+                                <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalCliente">
+                                    + Adicionar Cliente
+                                </button>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- ================================================================
+         MODAL PARA CADASTRO/EDIÇÃO DE CLIENTES
+         
+         Como funciona:
+         1. Modal fica oculto até clicar no botão "Novo Cliente"
+         2. data-bs-toggle="modal" data-bs-target="#modalCliente" abre
+         3. JavaScript preenche os campos ao editar
+         4. fetch() envia dados para backend sem recarregar página
+         ================================================================ -->
+    <div class="modal fade" id="modalCliente" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <!-- Cabeçalho do modal -->
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Novo Cliente</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                
+                <!-- Corpo do modal com formulário -->
+                <div class="modal-body">
+                    <form id="formCliente">
+                        <!-- Campo ID (oculto, apenas para edição) -->
+                        <input type="hidden" id="clienteId">
+
+                        <ul class="nav nav-tabs mb-3" id="clienteSubTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="cliente-dados-tab" data-bs-toggle="tab" data-bs-target="#cliente-dados" type="button" role="tab" aria-controls="cliente-dados" aria-selected="true">Dados</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="cliente-pagamento-tab" data-bs-toggle="tab" data-bs-target="#cliente-pagamento" type="button" role="tab" aria-controls="cliente-pagamento" aria-selected="false">Pagamento</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="cliente-processos-tab" data-bs-toggle="tab" data-bs-target="#cliente-processos" type="button" role="tab" aria-controls="cliente-processos" aria-selected="false">Processos</button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content" id="clienteSubTabsContent">
+                        <div class="tab-pane fade show active" id="cliente-dados" role="tabpanel" aria-labelledby="cliente-dados-tab" tabindex="0">
+                        
+                        <div class="row">
+                            <!-- Tipo de cliente (PF / PJ) -->
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Tipo *</label>
+                                    <select id="tipo_cliente" class="form-select">
+                                        <option value="PF">Pessoa Física</option>
+                                        <option value="PJ">Pessoa Jurídica</option>
+                                    </select>
+                                </div>
+
+                                <!-- Nome (PF) -->
+                                <div class="col-md-8 mb-3 pfFields">
+                                    <label class="form-label">Nome Completo *</label>
+                                    <input type="text" class="form-control" id="nome">
+                                    <small class="text-muted">Mínimo 3 caracteres</small>
+                                </div>
+
+                                <div class="col-md-4 mb-3 pfFields">
+                                    <label class="form-label">Nacionalidade</label>
+                                    <input type="text" class="form-control" id="nacionalidade">
+                                </div>
+
+                                <div class="col-md-4 mb-3 pfFields">
+                                    <label class="form-label">Estado Civil</label>
+                                    <select id="estado_civil" class="form-select">
+                                        <option value="">Selecionar</option>
+                                        <option value="Solteiro">Solteiro(a)</option>
+                                        <option value="Casado">Casado(a)</option>
+                                        <option value="Divorciado">Divorciado(a)</option>
+                                        <option value="Viuvo">Viúvo(a)</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3 pfFields">
+                                    <label class="form-label">Profissão</label>
+                                    <input type="text" class="form-control" id="profissao">
+                                </div>
+
+                                <div class="col-md-4 mb-3 pfFields">
+                                    <label class="form-label">RG</label>
+                                    <input type="text" class="form-control" id="rg">
+                                </div>
+
+                                <div class="col-md-4 mb-3 pfFields">
+                                    <label class="form-label">Órgão Expedidor</label>
+                                    <input type="text" class="form-control" id="orgao_expedidor">
+                                </div>
+
+                                <div class="col-12 mb-3 pfFields" id="conjugeBlock" style="display:none">
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Nome do Cônjuge</label>
+                                            <input type="text" class="form-control" id="conjuge_nome">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Regime de Bens</label>
+                                            <select id="regime_bens" class="form-select">
+                                                <option value="">Selecionar</option>
+                                                <option value="ComunhaoTotal">Comunhão Total</option>
+                                                <option value="ComunhaoParcial">Comunhão Parcial</option>
+                                                <option value="SeparacaoBens">Separação de Bens</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Campos para Pessoa Jurídica (PJ) -->
+                                <div class="col-12 mb-3 pjFields" style="display:none">
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Razão Social *</label>
+                                            <input type="text" class="form-control" id="razao_social">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Nome Fantasia</label>
+                                            <input type="text" class="form-control" id="nome_fantasia">
+                                        </div>
+                                        <div class="col-md-4 mt-2">
+                                            <label class="form-label">CNPJ *</label>
+                                            <input type="text" class="form-control" id="cnpj_pj" placeholder="00.000.000/0000-00">
+                                            <div class="invalid-feedback" id="cnpjFeedback">CNPJ inválido ou já cadastrado</div>
+                                        </div>
+                                        <div class="col-md-4 mt-2">
+                                            <label class="form-label">Inscrição Estadual (IE)</label>
+                                            <input type="text" class="form-control" id="inscricao_estadual">
+                                        </div>
+                                        <div class="col-md-4 mt-2">
+                                            <label class="form-label">Inscrição Municipal (IM)</label>
+                                            <input type="text" class="form-control" id="inscricao_municipal">
+                                        </div>
+                                        <div class="col-md-6 mt-2">
+                                            <label class="form-label">Nome do Sócio / Procurador</label>
+                                            <input type="text" class="form-control" id="socio_nome">
+                                        </div>
+                                        <div class="col-md-3 mt-2">
+                                            <label class="form-label">CPF</label>
+                                            <input type="text" class="form-control" id="socio_cpf">
+                                        </div>
+                                        <div class="col-md-3 mt-2">
+                                            <label class="form-label">RG</label>
+                                            <input type="text" class="form-control" id="socio_rg">
+                                        </div>
+                                        <div class="col-md-6 mt-2">
+                                            <label class="form-label">Cargo / Função</label>
+                                            <input type="text" class="form-control" id="cargo">
+                                        </div>
+                                    </div>
+                                </div>
+                            
+                            <!-- Email (obrigatório) -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="email" required>
+                                <small class="text-muted">Deve ser único</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Telefone -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Telefone</label>
+                                <input type="tel" class="form-control" id="telefone" placeholder="(11) 9999-9999">
+                            </div>
+                            
+                            <!-- CPF/CNPJ -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">CPF/CNPJ *</label>
+                                <input type="text" class="form-control" id="cpf_cnpj" placeholder="000.000.000-00" required>
+                                <div class="invalid-feedback" id="cpfFeedback">CPF inválido</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Endereço -->
+                        <div class="mb-3">
+                            <label class="form-label">Endereço</label>
+                            <input type="text" class="form-control" id="endereco" placeholder="Rua, número, complemento">
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Cidade -->
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label">Cidade</label>
+                                <input type="text" class="form-control" id="cidade">
+                            </div>
+                            
+                            <!-- UF (Estado) -->
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">UF</label>
+                                <select class="form-select" id="uf">
+                                    <option value="">Selecionar</option>
+                                    <option value="SP">SP</option>
+                                    <option value="RJ">RJ</option>
+                                    <option value="MG">MG</option>
+                                    <option value="BA">BA</option>
+                                    <option value="SC">SC</option>
+                                    <option value="RS">RS</option>
+                                    <option value="PR">PR</option>
+                                    <option value="CE">CE</option>
+                                    <option value="PE">PE</option>
+                                    <option value="PA">PA</option>
+                                    <!-- Adicione outros estados conforme necessário -->
+                                </select>
+                            </div>
+                        </div>
+
+                        </div>
+
+                        <div class="tab-pane fade" id="cliente-pagamento" role="tabpanel" aria-labelledby="cliente-pagamento-tab" tabindex="0">
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">Forma de pagamento</label>
+                                    <select id="forma_pagamento" class="form-select">
+                                        <option value="">Selecionar</option>
+                                        <option value="PIX">PIX</option>
+                                        <option value="Boleto">Boleto</option>
+                                        <option value="Transferência">Transferência</option>
+                                        <option value="Cartão">Cartão</option>
+                                        <option value="Dinheiro">Dinheiro</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">Contrato</label>
+                                    <select id="referencia_pagamento" class="form-select" disabled>
+                                        <option value="">Selecione um cliente salvo para carregar os contratos...</option>
+                                    </select>
+                                    <small class="text-muted">Selecione o contrato correto vinculado ao cliente.</small>
+                                </div>
+                            </div>
+
+                            <div id="avisoContratoSemFinanceiro" class="alert alert-warning small py-2 px-3 d-none" role="alert">
+                                Este contrato ainda não possui configuração financeira.
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Valor dos honorários (R$)</label>
+                                    <input type="number" step="0.01" min="0" class="form-control" id="valor_honorarios" placeholder="0,00">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Dia de vencimento</label>
+                                    <input type="number" min="1" max="31" class="form-control" id="dia_vencimento" placeholder="Ex: 10">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Número de parcelas</label>
+                                    <input type="number" min="1" max="60" class="form-control" id="numero_parcelas" placeholder="Ex: 12">
+                                    <small class="text-muted">Ao informar a quantidade, serão geradas as parcelas com status de pagamento e data de vencimento.</small>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Parcelas e vencimentos</label>
+                                <div id="parcelasPagamentoContainer" class="d-flex flex-wrap gap-2"></div>
+                            </div>
+
+                            <div class="alert alert-light border small mb-3" role="alert">
+                                <div><strong>Resumo de pagamento</strong></div>
+                                <div id="pagamentoResumoTotal" class="text-muted">Valor total: R$ 0,00</div>
+                                <div id="pagamentoResumoPago" class="text-muted">Valor pago: R$ 0,00</div>
+                                <div id="pagamentoResumoRestante" class="text-muted">Valor restante: R$ 0,00</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Observações de pagamento</label>
+                                <textarea id="observacoes_pagamento" class="form-control" rows="4" placeholder="Informações adicionais de pagamento..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="cliente-processos" role="tabpanel" aria-labelledby="cliente-processos-tab" tabindex="0">
+                            <div class="alert alert-light border small mb-3" role="alert">
+                                <div><strong>Resumo de processos</strong></div>
+                                <div id="clienteProcessosTotal" class="text-muted">Total: 0</div>
+                            </div>
+
+                            <div id="clienteProcessosContainer" class="table-responsive">
+                                <div class="text-muted">Selecione um cliente salvo para listar os processos.</div>
+                            </div>
+                        </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Rodapé do modal com botões -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button id="btnSalvarCliente" type="button" class="btn btn-primary" onclick="salvarCliente()">Salvar Cliente</button>
+                </div>
+            </div>
+        </div>
+    </div>
+                <!-- Modal para editar/anotar observações do cliente -->
+                <div class="modal fade" id="modalAnotacoes" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Anotações do Cliente</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" id="anotacoesClienteId">
+                                <div class="mb-3">
+                                    <label class="form-label">Anotações</label>
+                                    <textarea id="anotacoes_text" class="form-control" rows="10" placeholder="Escreva observações específicas sobre este cliente..."></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="button" class="btn btn-primary" onclick="salvarAnotacoesCliente()">Salvar Anotações</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+    
+    <!-- Modal para visualizar processos de um cliente -->
+    <div class="modal fade" id="modalProcessosCliente" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Processos do Cliente</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="processosClienteBody">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalEditarProcessoCliente" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Processo do Cliente</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formEditarProcessoCliente" enctype="multipart/form-data">
+                        <input type="hidden" id="clienteProcessoEditId">
+                        <input type="hidden" id="clienteProcessoClienteId">
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Número do Processo *</label>
+                                <input type="text" class="form-control" id="clienteProcessoNumero" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo de Ação *</label>
+                                <select class="form-select" id="clienteProcessoTipo" required>
+                                    <option value="">Selecionar...</option>
+                                    <option value="Cível">Cível</option>
+                                    <option value="Penal">Penal</option>
+                                    <option value="Trabalhista">Trabalhista</option>
+                                    <option value="Administrativo">Administrativo</option>
+                                    <option value="Outro">Outro</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Status *</label>
+                                <select class="form-select" id="clienteProcessoStatus" required>
+                                    <option value="">Selecionar...</option>
+                                    <option value="Aberto">Aberto</option>
+                                    <option value="Suspenso">Suspenso</option>
+                                    <option value="Arquivado">Arquivado</option>
+                                    <option value="Julgado">Julgado</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tribunal</label>
+                                <input type="text" class="form-control" id="clienteProcessoTribunal">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Vara</label>
+                                <input type="text" class="form-control" id="clienteProcessoVara">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Juiz</label>
+                                <input type="text" class="form-control" id="clienteProcessoJuiz">
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Descrição</label>
+                                <textarea class="form-control" id="clienteProcessoDescricao" rows="3"></textarea>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Anexar novos arquivos</label>
+                                <input type="file" class="form-control" id="clienteProcessoAnexos" multiple>
+                                <small class="text-muted">Novos arquivos serão adicionados aos anexos atuais.</small>
+                            </div>
+
+                            <div class="col-12" id="clienteProcessoAnexosAtuais"></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="salvarEdicaoProcessoClienteSubaba()">Salvar Alterações</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts JavaScript específicos desta página -->
+    {% block extra_js %}
+        <script src="{{ url_for('static', filename='js/clientes.js') }}"></script>
+    {% endblock %}
+{% endblock %}

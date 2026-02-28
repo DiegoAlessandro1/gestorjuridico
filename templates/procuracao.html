@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Procurações{% endblock %}
+{% block page_title %}
+	<div class="d-flex justify-content-between align-items-center" style="gap: 2rem;">
+		<span>Procurações</span>
+	</div>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm procuracao-clean">
+	<div class="card-body">
+		<h5 class="mb-1">Anexo em Folha Timbrada</h5>
+		<p class="text-muted mb-4">Todos os campos foram mantidos, com organização em blocos para facilitar o preenchimento.</p>
+		<div class="d-flex justify-content-end mb-3">
+			<button class="btn btn-outline-secondary btn-sm procuracao-advanced-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#procuracaoAvancado" aria-expanded="false" aria-controls="procuracaoAvancado">
+				<i class="bi bi-sliders2"></i> Mostrar/Ocultar campos avançados
+			</button>
+		</div>
+
+		<div class="procuracao-section mb-3">
+			<h6 class="procuracao-section-title">Dados principais</h6>
+			<div class="row g-3 align-items-end">
+				<div class="col-lg-4 col-md-6">
+					<label class="form-label">Cliente</label>
+					<select id="anexoCliente" class="form-select">
+						<option value="">Selecionar cliente</option>
+						{% for c in clientes %}
+							<option value="{{ c._id }}" data-cpf="{{ c.cpf_cnpj|default('') }}" data-endereco="{{ c.endereco|default('') }}" data-cidade="{{ c.cidade|default('') }}" data-uf="{{ c.uf|default('') }}">{{ c.nome }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div class="col-lg-3 col-md-6">
+					<label class="form-label">Advogado</label>
+					<select id="anexoAdvogado" class="form-select">
+						<option value="">Selecionar advogado</option>
+						{% for a in advogados %}
+							<option value="{{ a._id }}" data-oab="{{ a.oab|default('') }}">{{ a.nome }}{% if a.oab %} - OAB {{ a.oab }}{% endif %}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div class="col-lg-3 col-md-6">
+					<label class="form-label">Tipo</label>
+					<select id="anexoTipo" class="form-select">
+						<option value="">Selecionar tipo</option>
+						{% for t in tipos %}
+							<option value="{{ t }}">{{ t }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div class="col-lg-2 col-md-6 d-grid">
+					<button class="btn btn-primary" type="button" onclick="aplicarEmFolha()">
+						<i class="bi bi-file-earmark-person"></i> Aplicar na Folha
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<div class="collapse" id="procuracaoAvancado">
+			<div class="procuracao-section mb-3">
+				<h6 class="procuracao-section-title">Folha e formatação</h6>
+				<div class="row g-3 align-items-end">
+					<div class="col-lg-5 col-md-12">
+						<label class="form-label">Selecionar Folha</label>
+						<div class="input-group">
+							<select id="anexoFolha" class="form-select">
+								<option value="">Nenhuma</option>
+								{% for f in folhas %}
+									<option value="{{ f }}">{{ f }}</option>
+								{% endfor %}
+							</select>
+							<button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('anexoFile').click()">
+								<i class="bi bi-upload"></i>
+							</button>
+						</div>
+						<input type="file" id="anexoFile" accept=".pdf,.jpg,.png" style="display:none" />
+					</div>
+					<div class="col-lg-3 col-md-6">
+						<label class="form-label">Cidade</label>
+						<input id="anexoCidade" class="form-control" placeholder="Cidade para a procuração">
+					</div>
+					<div class="col-lg-2 col-md-6">
+						<label class="form-label">Tipo de letra</label>
+						<select id="anexoFonte" class="form-select">
+							<option value="Helvetica">Helvetica</option>
+							<option value="Helvetica-Bold">Helvetica Bold</option>
+							<option value="Helvetica-Oblique">Helvetica Itálico</option>
+							<option value="Times-Roman">Times New Roman</option>
+							<option value="Times-Bold">Times New Roman Bold</option>
+							<option value="Times-Italic">Times New Roman Itálico</option>
+							<option value="Courier">Courier New</option>
+							<option value="Courier-Bold">Courier New Bold</option>
+							<option value="Courier-Oblique">Courier New Itálico</option>
+							<option value="Georgia">Georgia</option>
+							<option value="Georgia-Bold">Georgia Bold</option>
+							<option value="Georgia-Italic">Georgia Itálico</option>
+						</select>
+					</div>
+					<div class="col-lg-2 col-md-6">
+						<label class="form-label">Tam. fonte</label>
+						<input id="anexoTamanhoFonte" type="number" min="8" max="24" value="12" class="form-control" title="Tamanho da fonte do conteúdo">
+					</div>
+				</div>
+			</div>
+
+			<div class="procuracao-section mb-3">
+				<h6 class="procuracao-section-title">Modelos de procuração</h6>
+				<div class="row g-3 align-items-end">
+					<div class="col-lg-5 col-md-12">
+						<label class="form-label">Modelo salvo</label>
+						<select id="anexoModelo" class="form-select">
+							<option value="">Selecionar modelo salvo</option>
+						</select>
+					</div>
+					<div class="col-lg-2 col-md-4 d-grid">
+						<button class="btn btn-outline-primary" type="button" onclick="aplicarModeloSelecionado()">
+							<i class="bi bi-check2-square"></i> Usar modelo
+						</button>
+					</div>
+					<div class="col-lg-2 col-md-4 d-grid">
+						<button class="btn btn-outline-warning" type="button" onclick="editarModeloSelecionado()">
+							<i class="bi bi-pencil"></i> Editar
+						</button>
+					</div>
+					<div class="col-lg-2 col-md-4 d-grid">
+						<button class="btn btn-outline-danger" type="button" onclick="excluirModeloSelecionado()">
+							<i class="bi bi-trash"></i> Excluir
+						</button>
+					</div>
+					<div class="col-lg-6 col-md-12">
+						<label class="form-label">Nome do modelo</label>
+						<input id="novoModeloNome" class="form-control" placeholder="Nome do seu modelo">
+					</div>
+				</div>
+				<small class="text-muted d-block mt-2">Modelos padrão não podem ser editados ou excluídos. Para salvar modelo próprio, não é necessário selecionar o tipo.</small>
+			</div>
+		</div>
+
+		<div class="procuracao-section mb-3">
+			<h6 class="procuracao-section-title">Texto complementar</h6>
+			<textarea id="anexoTextoComplementar" class="form-control" rows="4" placeholder="Adicione cláusulas, observações ou informações extras que deseja inserir na procuração."></textarea>
+			<div class="mt-3 text-end">
+				<button class="btn btn-outline-success" type="button" onclick="salvarModeloAtual()">
+					<i class="bi bi-save"></i> Salvar como modelo
+				</button>
+			</div>
+		</div>
+
+		<div class="row g-3">
+			<div class="col-lg-5">
+				<div class="procuracao-section h-100">
+					<h6 class="procuracao-section-title">Pré-visualização de fonte e tamanho</h6>
+					<div id="anexoPreviewVisual" class="procuracao-preview-visual border rounded p-3 bg-light">
+						Pré-visualização do texto da procuração.
+					</div>
+					<small class="text-muted d-block mt-2">Este preview é apenas visual. O layout final do PDF pode ter pequenas diferenças.</small>
+				</div>
+			</div>
+			<div class="col-lg-7">
+				<div class="procuracao-section h-100">
+					<h6 class="procuracao-section-title">Preview na folha</h6>
+					<div class="border rounded procuracao-preview-frame-wrap">
+						<iframe id="anexoPreviewFrame" class="procuracao-preview-frame" src=""></iframe>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+	<script src="{{ url_for('static', filename='js/procuracao.js') }}"></script>
+{% endblock %}

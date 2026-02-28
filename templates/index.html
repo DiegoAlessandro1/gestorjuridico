@@ -1,0 +1,179 @@
+{% raw %}
+<!--
+============================================================================
+TEMPLATE - DASHBOARD (Página Inicial)
+============================================================================
+Arquivo: templates/index.html
+Propósito: Painel visual com métricas e resumo do sistema
+
+Como funciona:
+1. &#123;% extends "base.html" %&#125; = herda layout do base.html
+2. &#123;% block content %&#125; = insere conteúdo específico desta página
+3. &#123;&#123; metricas.total_clientes &#125;&#125; = dados injetados pelo Python (Jinja2)
+4. &#123;% for %&#125; loops para iterar sobre listas (ultimos_processos)
+5. &#123;&#123; url_for() &#125;&#125; gera URLs dinâmicas de forma segura
+============================================================================
+-->
+{% endraw %}
+
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard - Painel de Controle{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <!-- ================================================================
+             CARDS DE MÉTRICAS - Exibem números principais
+             ================================================================ -->
+        
+        <!-- CARD 1: Total de Clientes -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <!-- Ícone do card -->
+                            <i class="bi bi-people-fill text-primary" style="font-size: 2.5rem;"></i>
+                        </div>
+                        <div class="ms-3">
+                            <!-- Informações do card 
+                                 IMPORTANTE: &#123;&#123; metricas.total_clientes &#125;&#125; é um valor do Python
+                                 injetado pelo Jinja2 na renderização do template
+                            -->
+                            <h6 class="mb-0">Total de Clientes</h6>
+                            <h3 class="mb-0 text-primary">{{ metricas.total_clientes }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CARD 2: Processos Abertos -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <i class="bi bi-file-earmark-check text-success" style="font-size: 2.5rem;"></i>
+                        </div>
+                        <div class="ms-3">
+                            <h6 class="mb-0">Processos Abertos</h6>
+                            <h3 class="mb-0 text-success">{{ metricas.processos_abertos }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CARD 3: Processos Suspensos -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <i class="bi bi-hourglass-split text-warning" style="font-size: 2.rem;"></i>
+                        </div>
+                        <div class="ms-3">
+                            <h6 class="mb-0">Processos Suspensos</h6>
+                            <h3 class="mb-0 text-warning">{{ metricas.processos_suspensos }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CARD 4: Processos Julgados -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <i class="bi bi-check-circle-fill text-info" style="font-size: 2.5rem;"></i>
+                        </div>
+                        <div class="ms-3">
+                            <h6 class="mb-0">Processos Julgados</h6>
+                            <h3 class="mb-0 text-info">{{ metricas.processos_julgados }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ================================================================
+         TABELA: ÚLTIMOS PROCESSOS REGISTRADOS
+         ================================================================ -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Últimos Processos Registrados</h5>
+                    <a href="{{ url_for('main.listar_processos') }}" class="btn btn-sm btn-primary">
+                        Ver Todos <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <!-- TABELA COM DADOS DINÂMICOS
+                         &#123;% for processo in metricas.ultimos_processos %&#125; 
+                         = itera sobre a lista de processos vindo do Python
+                    -->
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Número do Processo</th>
+                                <th>Cliente</th>
+                                <th>Tipo de Ação</th>
+                                <th>Status</th>
+                                <th>Tribunal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if metricas.ultimos_processos %}
+                                {% for processo in metricas.ultimos_processos %}
+                                    <tr>
+                                        <!-- Cada &#123;&#123; &#125;&#125; exibe um valor do objeto processo -->
+                                        <td>
+                                            <strong>{{ processo.numero_processo }}</strong>
+                                        </td>
+                                        <td>{{ processo.cliente_nome }}</td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ processo.tipo_acao }}</span>
+                                        </td>
+                                        <td>
+                                            <!-- Badge com cor conforme status -->
+                                            {% if processo.status == 'Aberto' %}
+                                                <span class="badge bg-success">{{ processo.status }}</span>
+                                            {% elif processo.status == 'Suspenso' %}
+                                                <span class="badge bg-warning">{{ processo.status }}</span>
+                                            {% elif processo.status == 'Julgado' %}
+                                                <span class="badge bg-info">{{ processo.status }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ processo.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ processo.tribunal }}</td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <!-- Mensagem quando não há processos -->
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox"></i> Nenhum processo registrado ainda
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Botão flutuante de ação rápida -->
+    <div class="position-fixed bottom-4 end-4">
+        <a href="{{ url_for('main.listar_clientes') }}" class="btn btn-primary btn-lg rounded-circle shadow" title="Novo Cliente">
+            <i class="bi bi-plus-lg"></i>
+        </a>
+    </div>
+{% endblock %}

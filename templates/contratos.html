@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Contratos{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Contratos</h2>
+    <button id="btnNovoContrato" class="btn btn-primary">Novo contrato</button>
+  </div>
+
+  <div id="contratosLista" class="table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Tipo</th>
+          <th>Data</th>
+          <th class="text-end">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Linhas serão carregadas via JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal Novo/Editar Contrato -->
+  <div class="modal fade" id="modalContrato" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Contrato</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formContrato">
+            <div class="mb-3">
+              <label class="form-label">Cliente</label>
+              <select id="contrato_cliente" class="form-select"></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Tipo</label>
+              <select class="form-select" id="contrato_tipo">
+                <option value="">-- selecione --</option>
+                <option value="Civis">Civis</option>
+                <option value="Trabalhista">Trabalhista</option>
+                <option value="Tributário">Tributário</option>
+                <option value="Administrativo">Administrativo</option>
+                <option value="Outros">Outros</option>
+              </select>
+            </div>
+
+            <div id="contrato_subtipo_container" class="mb-3 d-none">
+              <label class="form-label">Subtipo (Civis)</label>
+              <select class="form-select" id="contrato_subtipo">
+                <option value="">-- selecione --</option>
+                <option value="Compra e venda">Compra e venda</option>
+                <option value="Locação">Locação</option>
+                <option value="Empréstimo">Empréstimo</option>
+                <option value="Doação">Doação</option>
+                <option value="Permuta">Permuta</option>
+                <option value="Outros">Outros</option>
+              </select>
+              <input type="text" id="contrato_subtipo_outros" class="form-control mt-2 d-none" placeholder="Especifique outros" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Data</label>
+              <input type="date" class="form-control" id="contrato_data">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Arquivo (opcional)</label>
+              <input type="file" class="form-control" id="contrato_arquivo">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button id="btnSalvarContrato" type="button" class="btn btn-primary">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="/static/js/contratos.js"></script>
+{% endblock %}

@@ -1,0 +1,314 @@
+{% raw %}
+<!--
+============================================================================
+TEMPLATE BASE - LAYOUT MESTRE
+============================================================================
+Arquivo: templates/base.html
+Propósito: Estrutura HTML principal que todos os outros templates herdam
+
+Funcionalidades:
+- Sidebar lateral fixa para navegação
+- Navbar superior com branding
+- Flash messages para feedback ao usuário
+- Suporte a Bootstrap 5 via CDN
+- Bloco de conteúdo principal (&#123;% block content %&#125;)
+
+Como funciona:
+- Este é o "molde" que contém a estrutura comum
+- Outros templates (clientes.html, processos.html) herdam deste
+- Usam &#123;% extends "base.html" %&#125; e &#123;% block content %&#125; para conteúdo específico
+- Jinja2 injeta automaticamente dados do Python no HTML
+============================================================================
+-->
+{% endraw %}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <!-- Meta tags necessárias para compatibilidade e responsividade -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>{% block title %}Gestor Jurídico{% endblock %} - MVP</title>
+    
+    <!-- Bootstrap 5 CSS via CDN (sem necessidade de instalação local) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Ícones Bootstrap (Font Awesome alternativa) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <!-- CSS customizado da aplicação -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Scripts adicionais no head (CSS) -->
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div id="globalAlertOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:1999;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .25s ease, visibility .25s ease;"></div>
+    <div id="globalAlertCenter" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-46%);z-index:2000;width:min(92vw,520px);pointer-events:none;opacity:0;visibility:hidden;transition:opacity .25s ease, transform .25s ease, visibility .25s ease;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category in ['success', 'success_auto'] else 'danger' }} alert-dismissible fade show shadow {% if category == 'success_auto' %}alert-auto-close{% endif %}" role="alert" style="pointer-events:auto;">
+                        <div class="mb-2">{{ message }}</div>
+                        {% if category != 'success_auto' %}
+                            <div class="d-flex justify-content-end">
+                                <button type="button" class="btn btn-sm btn-primary alert-ok-btn" data-bs-dismiss="alert">OK</button>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <div class="wrapper d-flex">
+        
+        <!-- ============================================================================
+                        SIDEBAR - Navegação Lateral Fixa
+        ============================================================================ -->
+        <nav class="sidebar bg-dark text-white">
+            <!-- Logo/Branding da aplicação -->
+            <div class="sidebar-header p-3 border-bottom">
+                <div class="d-flex align-items-center mb-2" style="gap: 0.45rem;">
+                    <div class="text-start">
+                        {% if session.get('foto_usuario') %}
+                            <img src="{{ url_for('static', filename=session.get('foto_usuario')) }}" alt="Foto do usuário" class="rounded-circle border border-secondary" style="width:56px;height:56px;object-fit:cover;">
+                        {% else %}
+                            <div class="rounded-circle border border-secondary d-inline-flex align-items-center justify-content-center" style="width:56px;height:56px;">
+                                <i class="bi bi-person" style="font-size:1.5rem;"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% if can_access_perfil %}
+                        <a class="text-decoration-none text-white d-inline-flex align-items-center px-1 py-1" href="{{ url_for('main.perfil_usuario') }}">
+                            Perfil
+                        </a>
+                    {% endif %}
+                </div>
+                <h5 class="mb-0">
+                    <i class="bi bi-briefcase"></i> 
+                    Gestor Jurídico
+                </h5>
+                <small class="text-muted">MVP v1.0</small>
+            </div>
+            
+            <!-- Menu de navegação -->
+            <ul class="nav flex-column p-3">
+                <!-- Link para Dashboard -->
+                {% if can_access_dashboard %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'main.index' %}active{% endif %}" 
+                           href="{{ url_for('main.index') }}">
+                            <i class="bi bi-graph-up"></i> Dashboard
+                        </a>
+                    </li>
+                {% endif %}
+                
+                <!-- Link para Clientes -->
+                {% if can_access_clientes %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'main.listar_clientes' %}active{% endif %}" 
+                           href="{{ url_for('main.listar_clientes') }}">
+                            <i class="bi bi-people"></i> Clientes
+                        </a>
+                    </li>
+                {% endif %}
+                
+                <!-- Link para Processos -->
+                {% if can_access_processos %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'main.listar_processos' %}active{% endif %}" 
+                           href="{{ url_for('main.listar_processos') }}">
+                            <i class="bi bi-file-text"></i> Processos
+                        </a>
+                    </li>
+                {% endif %}
+
+                <!-- Link para Usuários -->
+                {% if can_access_usuarios %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint in ['main.pagina_advogados', 'main.pagina_usuarios'] %}active{% endif %}" 
+                           href="{{ url_for('main.pagina_usuarios') }}">
+                            <i class="bi bi-people-fill"></i> Usuários
+                        </a>
+                    </li>
+                {% endif %}
+
+                <!-- Link para Contratos -->
+                {% if can_access_contratos %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'main.listar_contratos' %}active{% endif %}"
+                           href="{{ url_for('main.listar_contratos') }}">
+                            <i class="bi bi-journal-text"></i> Contratos
+                        </a>
+                    </li>
+                {% endif %}
+
+                <!-- Link para Procuração (gerar procurações automáticas) -->
+                {% if can_access_procuracao %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'main.procurar_procuracao' %}active{% endif %}"
+                           href="{{ url_for('main.procurar_procuracao') }}">
+                            <i class="bi bi-file-earmark-text"></i> Procuração
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% if can_access_agenda %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'main.listar_agenda' %}active{% endif %}"
+                           href="{{ url_for('main.listar_agenda') }}">
+                            <i class="bi bi-calendar3"></i> Agenda
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% if can_access_financeiro %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'main.pagina_financeiro' %}active{% endif %}"
+                           href="{{ url_for('main.pagina_financeiro') }}">
+                            <i class="bi bi-cash-coin"></i> Financeiro
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+            
+            <!-- Footer do sidebar com informações -->
+            <div class="sidebar-footer p-3 border-top mt-auto">
+                <small class="text-muted d-block">
+                    <i class="bi bi-person-circle"></i> 
+                    {% if session.get('usuario_logado') %}
+                        {{ session.get('nome_usuario', 'Usuário') }}
+                    {% else %}
+                        Não autenticado
+                    {% endif %}
+                </small>
+                {% if session.get('usuario_logado') %}
+                    <small class="text-muted d-block mt-1">
+                        <i class="bi bi-shield-check"></i>
+                        Perfil: {{ perfil_usuario_rotulo }}
+                    </small>
+                {% endif %}
+                {% if session.get('usuario_logado') %}
+                    <a href="{{ url_for('main.logout') }}" class="btn btn-sm btn-outline-light w-100 mt-2">
+                        <i class="bi bi-box-arrow-left"></i> Sair
+                    </a>
+                {% endif %}
+                <small class="text-muted d-block mt-2">© 2026 Gestor Jurídico</small>
+            </div>
+        </nav>
+        
+        <!-- ============================================================================
+                        ÁREA PRINCIPAL DE CONTEÚDO
+        ============================================================================ -->
+        <div class="main-content flex-grow-1">
+            
+            <!-- NAVBAR SUPERIOR -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom sticky-top">
+                <div class="container-fluid">
+                    <span class="navbar-brand mb-0 h1">
+                        {% block page_title %}Bem-vindo{% endblock %}
+                    </span>
+                </div>
+            </nav>
+            
+            <!-- 
+            FLASH MESSAGES - Exibe mensagens de sucesso/erro
+            
+            Como funciona:
+            - Flask envia mensagens com flash('mensagem', 'categoria')
+            - Jinja2 itera sobre as mensagens e as exibe em cards Bootstrap
+            - Categoria determina a cor (success=verde, danger=vermelho, etc)
+            -->
+            <div class="container-fluid p-4">
+                <!-- 
+                BLOCO DE CONTEÚDO
+                
+                Este é o espaço onde cada página (clientes.html, processos.html) 
+                coloca seu conteúdo específico ao fazer &#123;% extends "base.html" %&#125;
+                -->
+                {% block content %}
+                    <!-- Conteúdo específico da página vai aqui -->
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap 5 JavaScript (necessário para modais, dropdowns, etc) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script JavaScript customizado -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const overlay = document.getElementById('globalAlertOverlay');
+            const center = document.getElementById('globalAlertCenter');
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
+            function atualizarOverlay() {
+                if (!overlay || !center) return;
+                const temAlertas = center.querySelectorAll('.alert.show').length > 0;
+                overlay.style.opacity = temAlertas ? '1' : '0';
+                overlay.style.visibility = temAlertas ? 'visible' : 'hidden';
+                center.style.opacity = temAlertas ? '1' : '0';
+                center.style.visibility = temAlertas ? 'visible' : 'hidden';
+                center.style.transform = temAlertas ? 'translate(-50%, -50%)' : 'translate(-50%, -46%)';
+            }
+
+            atualizarOverlay();
+
+            if (center) {
+                center.addEventListener('closed.bs.alert', function() {
+                    atualizarOverlay();
+                });
+            }
+
+            if (center) {
+                center.querySelectorAll('.alert-ok-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        const alertEl = btn.closest('.alert');
+                        if (alertEl) {
+                            try {
+                                const bsAlert = bootstrap.Alert.getOrCreateInstance(alertEl);
+                                bsAlert.close();
+                            } catch (e) {
+                                alertEl.remove();
+                            }
+                        }
+                        setTimeout(atualizarOverlay, 180);
+                    });
+                });
+
+                center.querySelectorAll('.alert-auto-close').forEach(function(alertEl) {
+                    setTimeout(function() {
+                        try {
+                            const bsAlert = bootstrap.Alert.getOrCreateInstance(alertEl);
+                            bsAlert.close();
+                        } catch (e) {
+                            alertEl.remove();
+                        }
+                        setTimeout(atualizarOverlay, 0);
+                    }, 1600);
+                });
+            }
+
+            if (csrfToken) {
+                document.querySelectorAll('form[method="POST"], form[method="post"]').forEach(function(form) {
+                    if (!form.querySelector('input[name="csrf_token"]')) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'csrf_token';
+                        input.value = csrfToken;
+                        form.appendChild(input);
+                    }
+                });
+            }
+        });
+    </script>
+    
+    <!-- Scripts adicionais no footer -->
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

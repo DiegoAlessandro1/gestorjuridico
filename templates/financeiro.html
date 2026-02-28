@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Financeiro{% endblock %}
+{% block page_title %}
+    <span>Financeiro</span>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-3">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <small class="text-muted">Faturamento Total</small>
+                <div class="h5 mb-0 text-primary">{{ resumo.total_faturado|brl_currency }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <small class="text-muted">Total Recebido</small>
+                <div class="h5 mb-0 text-success">{{ resumo.total_recebido|brl_currency }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <small class="text-muted">Total a Receber</small>
+                <div class="h5 mb-0 text-danger">{{ resumo.total_a_receber|brl_currency }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <small class="text-muted">Clientes Inadimplentes</small>
+                <div class="h5 mb-0">{{ resumo.total_inadimplentes }}</div>
+                <small class="text-muted">de {{ resumo.total_clientes_financeiro }} com faturamento</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <small class="text-muted">Entradas Realizadas</small>
+                <div class="h5 mb-0 text-success">{{ resumo.entradas_realizadas|brl_currency }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <small class="text-muted">Saídas Realizadas</small>
+                <div class="h5 mb-0 text-danger">{{ resumo.saidas_realizadas|brl_currency }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <small class="text-muted">Pagamentos a Realizar</small>
+                <div class="h5 mb-0 text-warning">{{ resumo.saidas_previstas|brl_currency }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <small class="text-muted">Saldo Atual de Caixa</small>
+                <div class="h5 mb-0 {{ 'text-success' if resumo.saldo_atual >= 0 else 'text-danger' }}">{{ resumo.saldo_atual|brl_currency }}</div>
+                <small class="text-muted">Projetado: {{ resumo.saldo_projetado|brl_currency }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white">
+        <h6 class="mb-0"><i class="bi bi-plus-circle"></i> Novo Lançamento de Fluxo de Caixa</h6>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('main.adicionar_lancamento_financeiro') }}" class="row g-3">
+            <div class="col-md-2">
+                <label class="form-label">Tipo</label>
+                <select name="tipo" class="form-select" required>
+                    <option value="entrada">Entrada</option>
+                    <option value="saida">Saída</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Categoria</label>
+                <input type="text" name="categoria" class="form-control" placeholder="Ex.: Honorários, Custas">
+                <small class="text-muted">Sugestões: {{ (categorias_entrada + categorias_saida)|join(', ') }}</small>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Descrição</label>
+                <input type="text" name="descricao" class="form-control" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Valor (R$)</label>
+                <input type="number" step="0.01" min="0.01" name="valor" class="form-control" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Vencimento</label>
+                <input type="date" name="data_vencimento" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Cliente (opcional)</label>
+                <input type="text" name="cliente_nome" class="form-control" placeholder="Nome do cliente relacionado">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Observações</label>
+                <input type="text" name="observacoes" class="form-control" placeholder="Detalhes adicionais">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-check2-circle"></i> Salvar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-bank"></i> Fluxo de Caixa (Contas a Receber e a Pagar)</h6>
+        <small class="text-muted">Entradas previstas: {{ resumo.entradas_previstas|brl_currency }}</small>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Tipo</th>
+                    <th>Descrição</th>
+                    <th>Categoria</th>
+                    <th>Cliente</th>
+                    <th>Vencimento</th>
+                    <th>Pagamento</th>
+                    <th>Status</th>
+                    <th>Valor</th>
+                    <th style="min-width: 180px;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if lancamentos %}
+                    {% for item in lancamentos %}
+                        <tr>
+                            <td>
+                                <span class="badge {{ 'bg-success' if item.tipo == 'entrada' else 'bg-danger' }}">
+                                    {{ 'Entrada' if item.tipo == 'entrada' else 'Saída' }}
+                                </span>
+                            </td>
+                            <td><strong>{{ item.descricao }}</strong></td>
+                            <td>{{ item.categoria or '-' }}</td>
+                            <td>{{ item.cliente_nome or '-' }}</td>
+                            <td>{{ item.data_vencimento_br }}</td>
+                            <td>{{ item.data_pagamento_br }}</td>
+                            <td>
+                                {% if item.status == 'pago' %}
+                                    <span class="badge bg-success">Pago</span>
+                                {% elif item.status == 'atrasado' %}
+                                    <span class="badge bg-danger">Atrasado</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Pendente</span>
+                                {% endif %}
+                            </td>
+                            <td class="{{ 'text-success' if item.tipo == 'entrada' else 'text-danger' }}">
+                                <strong>{{ item.valor|brl_currency }}</strong>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    {% if item.status != 'pago' %}
+                                        <form method="POST" action="{{ url_for('main.atualizar_status_lancamento_financeiro', lancamento_id=item._id) }}">
+                                            <input type="hidden" name="acao" value="pago">
+                                            <button type="submit" class="btn btn-sm btn-success" title="Marcar como pago">
+                                                <i class="bi bi-check2"></i>
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <form method="POST" action="{{ url_for('main.atualizar_status_lancamento_financeiro', lancamento_id=item._id) }}">
+                                            <input type="hidden" name="acao" value="pendente">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Voltar para pendente">
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                    <form method="POST" action="{{ url_for('main.excluir_lancamento_financeiro', lancamento_id=item._id) }}" onsubmit="return confirm('Deseja excluir este lançamento?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-5">
+                            <i class="bi bi-bank" style="font-size: 2rem;"></i>
+                            <p class="mt-2 mb-0">Nenhum lançamento no fluxo de caixa</p>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white">
+        <h6 class="mb-0"><i class="bi bi-people"></i> Honorários por Cliente (Contas a Receber)</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Cliente</th>
+                    <th>Forma</th>
+                    <th>Total</th>
+                    <th>Recebido</th>
+                    <th>A Receber</th>
+                    <th>Parcelas</th>
+                    <th style="min-width: 140px;">Progresso</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if detalhes_clientes %}
+                    {% for item in detalhes_clientes %}
+                        <tr>
+                            <td><strong>{{ item.nome }}</strong></td>
+                            <td>{{ item.forma_pagamento or '-' }}</td>
+                            <td>{{ item.valor_total|brl_currency }}</td>
+                            <td>{{ item.valor_recebido|brl_currency }}</td>
+                            <td>{{ item.valor_a_receber|brl_currency }}</td>
+                            <td>
+                                {% if item.numero_parcelas > 0 %}
+                                    {{ item.parcelas_pagas }}/{{ item.numero_parcelas }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 7px;">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ item.progresso }}%;" aria-valuenow="{{ item.progresso }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <small class="text-muted">{{ item.progresso }}%</small>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-5">
+                            <i class="bi bi-cash-stack" style="font-size: 2rem;"></i>
+                            <p class="mt-2 mb-0">Nenhum dado financeiro disponível</p>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Usuários{% endblock %}
+{% block page_title %}
+    <div class="d-flex justify-content-between align-items-center" style="gap: 2rem;">
+        <span>Gestão de Usuários</span>
+        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalAdvogado">
+            <i class="bi bi-plus-circle"></i> Novo Usuário
+        </button>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Nome</th>
+                    <th>OAB</th>
+                    <th>Tipo</th>
+                    <th>Email</th>
+                    <th>Telefone</th>
+                    <th>Endereço Profissional</th>
+                    <th class="text-end">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if advogados %}
+                    {% for advogado in advogados %}
+                        <tr>
+                            <td><strong>{{ advogado.nome }}</strong></td>
+                            <td>{{ advogado.oab or '-' }}</td>
+                            <td>
+                                <span class="badge {{ 'bg-primary' if advogado.tipo == 'Advogado' else ('bg-info text-dark' if advogado.tipo == 'Secretaria' else 'bg-secondary') }}">
+                                    {{ advogado.tipo or 'Advogado' }}
+                                </span>
+                            </td>
+                            <td>{{ advogado.email or '-' }}</td>
+                            <td>{{ advogado.telefone or '-' }}</td>
+                            <td>{{ advogado.endereco_profissional or advogado.endereco or '-' }}</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-primary"
+                                        data-id="{{ advogado._id }}"
+                                        data-nome="{{ advogado.nome|e }}"
+                                        data-oab="{{ (advogado.oab or '')|e }}"
+                                        data-tipo="{{ (advogado.tipo or 'Advogado')|e }}"
+                                        data-email="{{ (advogado.email or '')|e }}"
+                                        data-telefone="{{ (advogado.telefone or '')|e }}"
+                                        data-endereco="{{ (advogado.endereco_profissional or advogado.endereco or '')|e }}"
+                                        data-usuario="{{ (advogado.usuario or '')|e }}"
+                                        onclick="editarAdvogadoFromButton(this)">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </button>
+                                <button class="btn btn-sm btn-danger"
+                                        data-id="{{ advogado._id }}"
+                                        data-nome="{{ advogado.nome|e }}"
+                                        onclick="deletarAdvogadoFromButton(this)">
+                                    <i class="bi bi-trash"></i> Deletar
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-5">
+                            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                            <p class="mt-2">Nenhum usuário cadastrado</p>
+                            <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalAdvogado">
+                                + Adicionar Usuário
+                            </button>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="modalAdvogado" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalAdvogadoTitle">Novo Usuário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formAdvogado">
+                    <input type="hidden" id="advogadoId">
+
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Nome *</label>
+                            <input type="text" class="form-control" id="advogadoNome" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">OAB</label>
+                            <input type="text" class="form-control" id="advogadoOab" placeholder="Obrigatório para advogado">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Tipo de usuário *</label>
+                            <select class="form-select" id="advogadoTipo" required>
+                                <option value="Advogado">Advogado</option>
+                                <option value="Secretaria">Secretaria</option>
+                                <option value="Estagiário">Estagiário</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="advogadoEmail">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Telefone</label>
+                            <input type="text" class="form-control" id="advogadoTelefone" placeholder="(11) 99999-9999">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Endereço profissional</label>
+                        <input type="text" class="form-control" id="advogadoEndereco" placeholder="Rua, número, complemento">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Usuário *</label>
+                            <input type="text" class="form-control" id="advogadoUsuario" required placeholder="usuario.advogado">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Senha *</label>
+                            <input type="password" class="form-control" id="advogadoSenha" placeholder="Digite a senha de acesso">
+                            <small class="text-muted">Na edição, deixe em branco para manter a senha atual.</small>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="salvarAdvogado()">Salvar Usuário</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{{ url_for('static', filename='js/usuarios.js') }}"></script>
+{% endblock %}

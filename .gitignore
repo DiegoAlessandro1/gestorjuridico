@@ -1,0 +1,74 @@
+# ============================================================================
+# .gitignore - Arquivos NÃO enviados ao GitHub
+# ============================================================================
+# Este arquivo especifica quais arquivos o Git deve ignorar
+# (não fazer commit/push)
+#
+# IMPORTANTE: Protege dados sensíveis de serem expostos publicamente!
+# ============================================================================
+
+# ========== AMBIENTE VIRTUAL ==========
+venv/
+env/
+ENV/
+venv.bak/
+env.bak/
+
+# ========== VARIÁVEIS DE AMBIENTE (SEGREDO!) ==========
+# NÃO COMMIT O ARQUIVO .env - Contém credenciais!
+.env
+.env.local
+.env.*.local
+
+# ========== CACHE PYTHON ==========
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ========== AMBIENTE DESENVOLVIMENTO ==========
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ========== TESTS ==========
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ========== LOGGING ==========
+*.log
+logs/
+
+# ========== BANCO DE DADOS ==========
+*.db
+*.sqlite
+*.sqlite3
+
+# ========== ARQUIVOS OS ==========
+.DS_Store
+.env.swp
+Thumbs.db

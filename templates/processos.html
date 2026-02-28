@@ -1,0 +1,287 @@
+<!--
+============================================================================
+TEMPLATE - GESTÃO DE PROCESSOS JURÍDICOS
+============================================================================
+Arquivo: templates/processos.html
+Propósito: Página para visualizar, criar e gerenciar processos jurídicos
+
+Funcionalidades:
+1. Tabela com filtros por status
+2. Modal para cadastro e edição de processos
+3. Integração com clientes (referência)
+4. Suporte a múltiplos tipos de ação e status
+5. Responsivo e amigável para mobile
+============================================================================
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Processos{% endblock %}
+{% block page_title %}
+    <div class="d-flex justify-content-between align-items-center" style="gap: 2rem;">
+        <span>Gestão de Processos Jurídicos</span>
+        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalProcesso">
+            <i class="bi bi-plus-circle"></i> Novo Processo
+        </button>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <!-- ================================================================
+         FILTROS
+         ================================================================ -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Filtro por Status -->
+                <div class="col-md-3">
+                    <label class="form-label">Filtrar por Status</label>
+                    <select class="form-select" id="filtroStatus" onchange="filtrarProcessos()">
+                        <option value="">Todos os Status</option>
+                        <option value="Aberto">Aberto</option>
+                        <option value="Suspenso">Suspenso</option>
+                        <option value="Arquivado">Arquivado</option>
+                        <option value="Julgado">Julgado</option>
+                    </select>
+                </div>
+                
+                <!-- Filtro por Tipo de Ação -->
+                <div class="col-md-3">
+                    <label class="form-label">Filtrar por Tipo</label>
+                    <select class="form-select" id="filtroTipo" onchange="filtrarProcessos()">
+                        <option value="">Todos os Tipos</option>
+                        <option value="Cível">Cível</option>
+                        <option value="Penal">Penal</option>
+                        <option value="Trabalhista">Trabalhista</option>
+                        <option value="Administrativo">Administrativo</option>
+                    </select>
+                </div>
+                
+                <!-- Busca por Número do Processo -->
+                <div class="col-md-4">
+                    <label class="form-label">Buscar por Número</label>
+                    <input type="text" class="form-control" id="buscaNumero" 
+                           placeholder="Número do processo..." onkeyup="filtrarProcessos()">
+                </div>
+                
+                <!-- Botão Limpar Filtros -->
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-outline-secondary w-100" onclick="limparFiltros()">
+                        <i class="bi bi-arrow-clockwise"></i> Limpar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ================================================================
+         TABELA DE PROCESSOS
+         ================================================================ -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="tabelaProcessos">
+                <thead class="table-light">
+                    <tr>
+                        <th>Número</th>
+                        <th>Cliente</th>
+                        <th>Tipo</th>
+                        <th>Tribunal</th>
+                        <th>Status</th>
+                        <th>Vara</th>
+                        <th>Anexo</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- LOOP JINJA2: Itera sobre cada processo -->
+                    {% if processos %}
+                        {% for processo in processos %}
+                            {% set anexos_processo = processo.anexos if processo.anexos else ([processo.anexo] if processo.anexo else []) %}
+                            <tr class="processo-row" 
+                                data-status="{{ processo.status }}" 
+                                data-tipo="{{ processo.tipo_acao }}"
+                                data-numero="{{ processo.numero_processo }}">
+                                <td>
+                                    <strong>{{ processo.numero_processo }}</strong>
+                                </td>
+                                <td>
+                                    <a href="#" onclick="verDetalhesProcesso('{{ processo._id }}')">
+                                        {{ processo.cliente_nome }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ processo.tipo_acao }}</span>
+                                </td>
+                                <td>{{ processo.tribunal }}</td>
+                                <td>
+                                    <!-- Badge com cor conforme status -->
+                                    {% if processo.status == 'Aberto' %}
+                                        <span class="badge bg-success">{{ processo.status }}</span>
+                                    {% elif processo.status == 'Suspenso' %}
+                                        <span class="badge bg-warning text-dark">{{ processo.status }}</span>
+                                    {% elif processo.status == 'Arquivado' %}
+                                        <span class="badge bg-secondary">{{ processo.status }}</span>
+                                    {% elif processo.status == 'Julgado' %}
+                                        <span class="badge bg-info">{{ processo.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ processo.vara }}</td>
+                                <td>
+                                    {% if anexos_processo %}
+                                        <a href="{{ url_for('static', filename=anexos_processo[0]) }}" target="_blank">
+                                            <i class="bi bi-paperclip"></i>
+                                            {% if anexos_processo|length > 1 %}
+                                                Ver ({{ anexos_processo|length }})
+                                            {% else %}
+                                                Ver
+                                            {% endif %}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <!-- Botão Editar -->
+                                    <button class="btn btn-sm btn-primary" 
+                                            onclick="editarProcesso('{{ processo._id }}', '{{ processo.numero_processo }}', '{{ processo.cliente_id }}', '{{ processo.tipo_acao }}', '{{ processo.tribunal }}', '{{ processo.vara }}', '{{ processo.juiz }}', '{{ processo.status }}', '{{ processo.descricao | safe }}', {{ anexos_processo | tojson | forceescape }})">
+                                        <i class="bi bi-pencil"></i> Editar
+                                    </button>
+
+                                    <!-- Botão Deletar -->
+                                    <button class="btn btn-sm btn-danger" 
+                                            onclick="deletarProcesso('{{ processo._id }}', '{{ processo.numero_processo }}')">
+                                        <i class="bi bi-trash"></i> Deletar
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <p class="mt-2">Nenhum processo registrado</p>
+                                <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalProcesso">
+                                    + Adicionar Processo
+                                </button>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- ================================================================
+         MODAL PARA CADASTRO/EDIÇÃO DE PROCESSOS
+         ================================================================ -->
+    <div class="modal fade" id="modalProcesso" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalProcessoTitle">Novo Processo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                
+                <div class="modal-body">
+                    <form id="formProcesso" enctype="multipart/form-data">
+                        <!-- Campo ID (oculto) -->
+                        <input type="hidden" id="processoId">
+                        
+                        <div class="row">
+                            <!-- Número do Processo -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Número do Processo *</label>
+                                <input type="text" class="form-control" id="numero_processo" 
+                                       placeholder="0000001-23.2024.8.26.0100" required>
+                                <small class="text-muted">Exemplo: 0000001-23.2024.8.26.0100</small>
+                            </div>
+                            
+                            <!-- Cliente -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Cliente *</label>
+                                <select class="form-select" id="cliente_id" required>
+                                    <option value="">Selecionar cliente...</option>
+                                    <!-- Opções carregadas via JavaScript -->
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Tipo de Ação -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tipo de Ação *</label>
+                                <select class="form-select" id="tipo_acao" required>
+                                    <option value="">Selecionar...</option>
+                                    <option value="Cível">Cível</option>
+                                    <option value="Penal">Penal</option>
+                                    <option value="Trabalhista">Trabalhista</option>
+                                    <option value="Administrativo">Administrativo</option>
+                                    <option value="Outro">Outro</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Status -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Status *</label>
+                                <select class="form-select" id="status" required>
+                                    <option value="Aberto">Aberto</option>
+                                    <option value="Suspenso">Suspenso</option>
+                                    <option value="Arquivado">Arquivado</option>
+                                    <option value="Julgado">Julgado</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Tribunal -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tribunal</label>
+                                <input type="text" class="form-control" id="tribunal" 
+                                       placeholder="Tribunal de Justiça">
+                            </div>
+                            
+                            <!-- Vara -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Vara</label>
+                                <input type="text" class="form-control" id="vara" 
+                                       placeholder="1ª Vara Cível">
+                            </div>
+                        </div>
+                        
+                        <!-- Juiz -->
+                        <div class="mb-3">
+                            <label class="form-label">Juiz</label>
+                            <input type="text" class="form-control" id="juiz" 
+                                   placeholder="Nome do juiz responsável">
+                        </div>
+
+                        <!-- Descrição -->
+                        <div class="mb-3">
+                            <label class="form-label">Descrição do Caso</label>
+                            <textarea class="form-control" id="descricao" rows="4" 
+                                      placeholder="Descreva brevemente os detalhes do caso..."></textarea>
+                        </div>
+
+                        <!-- Anexos -->
+                        <div class="mb-3">
+                            <label class="form-label">Anexar documentos</label>
+                            <input type="file" class="form-control" id="anexos" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx">
+                            <small class="text-muted">Você pode selecionar vários arquivos (ex.: CPF, certidão de nascimento, procuração, etc.)</small>
+                            <div id="anexoAtual" class="mt-2"></div>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="salvarProcesso()">Salvar Processo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts JavaScript específicos desta página -->
+    {% block extra_js %}
+        <script src="{{ url_for('static', filename='js/processos.js') }}"></script>
+    {% endblock %}
+{% endblock %}

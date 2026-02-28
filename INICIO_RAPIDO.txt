@@ -1,0 +1,224 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║                  GESTOR JURÍDICO MVP - INÍCIO RÁPIDO                   ║
+║                         🚀 START IN 10 MINUTES 🚀                      ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+## 1️⃣ OBTER MONGODB URI (2 minutos)
+
+▶ Acesse: https://www.mongodb.com/cloud/atlas
+▶ Criar conta (gratuita)
+▶ Criar cluster M0 (gratuito)
+▶ Connect > Python > Copiar connection string
+
+EXEMPLO:
+mongodb+srv://seu_usuario:sua_senha@cluster0.mongodb.net/gestor_juridico?retryWrites=true&w=majority
+
+---
+
+## 2️⃣ CONFIGURAR ARQUIVO .env (1 minuto)
+
+Abra o arquivo .env no editor (está na raiz do projeto) e coloque:
+
+MONGODB_URI=mongodb+srv://SEU_USUARIO:SUA_SENHA@cluster0.mongodb.net/gestor_juridico?retryWrites=true&w=majority
+MONGODB_DB_NAME=gestor_juridico
+SECRET_KEY=chave_super_segura_desenvolvimento_2026
+FLASK_ENV=development
+FLASK_DEBUG=True
+PORT=5000
+
+---
+
+## 3️⃣ INSTALAR DEPENDÊNCIAS (3 minutos)
+
+### Windows:
+1. Duplo clique em: setup.bat
+   OU
+   Abra PowerShell/CMD na pasta do projeto e execute:
+   venv\Scripts\activate
+   pip install -r requirements.txt
+
+### macOS/Linux:
+bash setup.sh
+OU
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+---
+
+## 4️⃣ EXECUTAR APLICAÇÃO (1 minuto)
+
+### Windows:
+venv\Scripts\activate
+python run.py
+
+### macOS/Linux:
+source venv/bin/activate
+python run.py
+
+Você verá:
+
+╔════════════════════════════════════════════════════════════╗
+║           GESTOR JURÍDICO MVP - SERVIDOR INICIADO          ║
+╠════════════════════════════════════════════════════════════╣
+║ 🚀 Servidor rodando em: http://localhost:5000            ║
+║ 🔧 Modo: DESENVOLVIMENTO                                  ║
+║ 📊 Banco: MongoDB Atlas                                   ║
+╚════════════════════════════════════════════════════════════╝
+
+---
+
+## 5️⃣ ABRIR NO NAVEGADOR (1 minuto)
+
+Acesse: http://localhost:5000
+
+VEJA:
+✅ Dashboard com métricas
+✅ Sidebar de navegação
+✅ Menu de Clientes e Processos
+
+---
+
+## 6️⃣ (OPCIONAL) CARREGAR DADOS DE TESTE
+
+Abra novo terminal e execute:
+
+### Windows:
+venv\Scripts\activate
+python seed_data.py
+
+### macOS/Linux:
+source venv/bin/activate
+python seed_data.py
+
+Verá:
+✅ 3 clientes inseridos
+✅ 5 processos inseridos
+
+Volte ao navegador e RECARREGUE a página (F5).
+
+Você verá os dados aparecerem!
+
+---
+
+## 🎯 TESTE AS FUNCIONALIDADES
+
+### Criar Cliente:
+1. Clique em "Clientes" (sidebar)
+2. Clique em "+ Novo Cliente"
+3. Preencha:
+   - Nome: Seu Nome
+   - Email: seu@email.com
+   - CPF: 123.456.789-00
+4. Clique "Salvar Cliente"
+5. ✅ Cliente aparece na tabela!
+
+### Criar Processo:
+1. Clique em "Processos" (sidebar)
+2. Clique em "+ Novo Processo"
+3. Preencha:
+   - Número: 0000001-23.2024.8.26.0100
+   - Cliente: Escolha um
+   - Tipo: Cível
+   - Status: Aberto
+4. Clique "Salvar Processo"
+5. ✅ Processo aparece na tabela!
+
+### Editar Cliente:
+1. Clique "Editar" em um cliente
+2. Modal abre com dados
+3. Modifique algo
+4. Clique "Salvar Cliente"
+5. ✅ Dados atualizados!
+
+### Deletar Cliente:
+1. Clique "Deletar" em um cliente
+2. Confirme a exclusão
+3. ✅ Cliente desaparece!
+
+### Filtrar Processos:
+1. Na página de Processos
+2. Selecione um Status
+3. ✅ Tabela filtra automaticamente!
+
+---
+
+## 🎉 PARABÉNS!
+
+Seu MVP está rodando com sucesso! 🎉
+
+Agora explore:
+- [x] Crie vários clientes
+- [x] Crie processos para cada cliente
+- [x] Edite e delete dados
+- [x] Teste os filtros
+- [x] Verifique o dashboard
+
+---
+
+## 📚 PRÓXIMOS PASSOS
+
+### Estudar o Código:
+- Leia os comentários em cada arquivo
+- Comece por: app/__init__.py → app/routes.py → templates/
+
+### Fazer Deploy:
+- Siga instruções em README.md
+- Escolha: Render.com ou Heroku
+- Deploy em 10 minutos
+
+### Estender Funcionalidades:
+- Leia DESENVOLVIMENTO.md
+- Adicione novos campos
+- Crie novos módulos
+
+---
+
+## ❌ ERROS COMUNS
+
+### Erro: "Cannot connect to MongoDB"
+✅ Verifique:
+  1. URI do MongoDB está em .env?
+  2. Senha contém caracteres especiais? Use URL encoding
+  3. IP está whitelisted no MongoDB Atlas?
+
+### Erro: "Module not found"
+✅ Verifique:
+  1. Ambiente virtual está ativado?
+  2. requirements.txt foi instalado?
+  pip install -r requirements.txt
+
+### Página em branco
+✅ Verifique:
+  1. Console do navegador (F12) tem erros?
+  2. Terminal do Python tem erros?
+  3. Recarregue com Ctrl+F5 (limpa cache)
+
+---
+
+## 📞 PRECISA DE AJUDA?
+
+1. Leia o README.md (documentação completa)
+2. Verifique DESENVOLVIMENTO.md (guia de desenvolvimento)
+3. Consulte ARQUITETURA.md (entender fluxos)
+4. Veja comentários no código (cada função explicada)
+
+---
+
+## 🔐 LEMBRE-SE
+
+⚠️ NUNCA compartilhe o arquivo .env
+⚠️ Mantenha credenciais seguras
+⚠️ Em produção, use Heroku/Render variables
+
+---
+
+## ✨ VOCÊ CONSEGUIU!
+
+Seu Gestor Jurídico MVP está completo e funcionando! 🚀
+
+**Versão:** 1.0.0
+**Status:** Production Ready ✅
+**Data:** 1º de Fevereiro de 2026
+
+Feliz desenvolvimento! 💻
