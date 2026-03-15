@@ -86,7 +86,17 @@ Como funciona:
                                 Perfil
                             </a>
                             {% if session.get('usuario_logado') %}
-                                <small class="badge bg-light text-primary fw-semibold align-self-start ms-1">{{ perfil_usuario_rotulo }}</small>
+                                {% set tipo_badge = 'bg-light text-primary' %}
+                                {% if perfil_usuario_rotulo == 'Administrador' %}
+                                    {% set tipo_badge = 'bg-danger-subtle text-danger-emphasis' %}
+                                {% elif perfil_usuario_rotulo == 'Advogado' %}
+                                    {% set tipo_badge = 'bg-primary-subtle text-primary-emphasis' %}
+                                {% elif perfil_usuario_rotulo == 'Estagiário' %}
+                                    {% set tipo_badge = 'bg-warning-subtle text-warning-emphasis' %}
+                                {% elif perfil_usuario_rotulo == 'Secretaria' %}
+                                    {% set tipo_badge = 'bg-info-subtle text-info-emphasis' %}
+                                {% endif %}
+                                <small class="badge {{ tipo_badge }} fw-semibold align-self-start ms-1">{{ perfil_usuario_rotulo }}</small>
                             {% endif %}
                         </div>
                     {% endif %}
