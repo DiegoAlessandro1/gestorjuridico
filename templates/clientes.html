@@ -79,9 +79,6 @@ Como funciona:
                                             {% if cliente.forma_pagamento %}
                                                 <span class="badge bg-light text-dark border">{{ cliente.forma_pagamento }}</span>
                                             {% endif %}
-                                            {% if cliente.referencia_pagamento %}
-                                                <div class="text-muted">Ref.: {{ cliente.referencia_pagamento }}</div>
-                                            {% endif %}
                                             {% if cliente.dia_vencimento %}
                                                 <div class="text-muted">Venc.: dia {{ cliente.dia_vencimento }}</div>
                                             {% endif %}

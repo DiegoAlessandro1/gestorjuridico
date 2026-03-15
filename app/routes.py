@@ -1511,7 +1511,7 @@ def obter_referencias_pagamento_cliente(cliente_id):
 
             data_label = f" - {data}" if data else ''
             label = f"Contrato: {tipo_label}{data_label} ({contrato_id[:8]})"
-            valor = f"Contrato ID: {contrato_id}"
+            valor = contrato_id
 
             referencias.append({
                 'tipo': 'contrato',

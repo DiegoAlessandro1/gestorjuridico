@@ -66,7 +66,8 @@ function obterContratoIdDaReferencia(valorReferencia = '') {
     if (!valor) return '';
 
     const match = valor.match(/^Contrato\s*ID:\s*(.+)$/i);
-    return (match && match[1]) ? match[1].trim() : '';
+    if (match && match[1]) return match[1].trim();
+    return valor;
 }
 
 function atualizarAvisoContratoSemConfiguracao(exibir = false) {
@@ -182,7 +183,9 @@ async function carregarReferenciasPagamentoCliente(clienteId, referenciaSelecion
             } else {
                 const legacy = document.createElement('option');
                 legacy.value = referenciaSelecionada;
-                legacy.textContent = `Referência atual (legado): ${referenciaSelecionada}`;
+                const contratoIdLegado = obterContratoIdDaReferencia(referenciaSelecionada);
+                const contratoResumo = contratoIdLegado ? contratoIdLegado.slice(0, 8) : 'sem identificação';
+                legacy.textContent = `Contrato atual (legado): ${contratoResumo}`;
                 select.appendChild(legacy);
                 select.value = referenciaSelecionada;
             }
