@@ -4,17 +4,28 @@
 # Arquivo: app/scheduler.py
 # Propósito: Executa tarefas em background (alertas de email)
 
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
+try:
+    from apscheduler.schedulers.background import BackgroundScheduler
+    from apscheduler.triggers.cron import CronTrigger
+    APSCHEDULER_DISPONIVEL = True
+    ERRO_APSCHEDULER = None
+except Exception as e:
+    APSCHEDULER_DISPONIVEL = False
+    ERRO_APSCHEDULER = e
+
 from .email_service import EmailService
 import atexit
 
-scheduler = BackgroundScheduler()
+scheduler = BackgroundScheduler() if APSCHEDULER_DISPONIVEL else None
 
 def iniciar_scheduler():
     """
     Inicia o scheduler com tarefas agendadas
     """
+    if not APSCHEDULER_DISPONIVEL or scheduler is None:
+        print(f"[AVISO] APScheduler indisponivel: {ERRO_APSCHEDULER}")
+        return False
+
     try:
         # Tarefa diária às 08:00 para enviar alertas de prazos
         scheduler.add_job(
@@ -30,9 +41,11 @@ def iniciar_scheduler():
         
         # Garante que o scheduler termine ao desligar a app
         atexit.register(lambda: scheduler.shutdown())
+        return True
         
     except Exception as e:
         print(f"[ERRO] Falha ao iniciar scheduler: {e}")
+        return False
 
 def enviar_alerta_prazos_diario():
     """
@@ -49,6 +62,6 @@ def parar_scheduler():
     """
     Para o scheduler
     """
-    if scheduler.running:
+    if scheduler is not None and scheduler.running:
         scheduler.shutdown()
         print("[OK] Scheduler parado")
