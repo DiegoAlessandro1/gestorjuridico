@@ -80,14 +80,14 @@ try:
     
     client = MongoClient(
         Config.MONGODB_URI,
-        serverSelectionTimeoutMS=30000,  # 30 segundos para conectar
-        connectTimeoutMS=30000,
+        serverSelectionTimeoutMS=5000,
+        connectTimeoutMS=5000,
         retryWrites=True
     )
-    
-    # Testa se a conexão está funcionando
-    client.admin.command('ping')
-    print("[OK] Conexao com MongoDB Atlas estabelecida com sucesso")
+
+    # Importante para ambiente serverless:
+    # não realizar ping aqui para evitar timeout/bloqueio no cold start.
+    print("[OK] Cliente MongoDB configurado")
     
 except Exception as e:
     print(f"[ERRO] Falha ao conectar ao MongoDB: {e}")

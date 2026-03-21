@@ -53,16 +53,20 @@ def create_app():
     
     # ========== INICIALIZAÇÃO DO BANCO DE DADOS ==========
     try:
-        # Inicializa coleções e índices no MongoDB
-        init_db()
-        print("[OK] Aplicacao inicializada com sucesso")
-        
-        # Inicia scheduler apenas fora de ambiente serverless
         em_vercel = os.getenv('VERCEL') == '1'
+        pular_init_db = os.getenv('SKIP_DB_INIT', 'False') == 'True'
+
+        # Em serverless, evita bootstrap pesado no import para reduzir crashes por timeout.
+        if not em_vercel and not pular_init_db:
+            init_db()
+
+        print("[OK] Aplicacao inicializada com sucesso")
+
+        # Inicia scheduler apenas fora de ambiente serverless
         scheduler_desabilitado = os.getenv('DISABLE_SCHEDULER', 'False') == 'True'
         if not em_vercel and not scheduler_desabilitado:
             iniciar_scheduler()
-        
+
     except Exception as e:
         print(f"[AVISO] Erro ao inicializar aplicacao: {e}")
     
