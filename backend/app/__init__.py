@@ -13,7 +13,6 @@
 from flask import Flask
 from .config import Config, init_db
 import os
-from .scheduler import iniciar_scheduler
 
 
 def create_app():
@@ -65,7 +64,11 @@ def create_app():
         # Inicia scheduler apenas fora de ambiente serverless
         scheduler_desabilitado = os.getenv('DISABLE_SCHEDULER', 'False') == 'True'
         if not em_vercel and not scheduler_desabilitado:
-            iniciar_scheduler()
+            try:
+                from .scheduler import iniciar_scheduler
+                iniciar_scheduler()
+            except Exception as scheduler_error:
+                print(f"[AVISO] Scheduler indisponivel: {scheduler_error}")
 
     except Exception as e:
         print(f"[AVISO] Erro ao inicializar aplicacao: {e}")

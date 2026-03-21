@@ -21,6 +21,7 @@ python-dateutil==2.8.2         # Manipulação de datas e horas
 
 # AMBIENTE DE PRODUÇÃO
 gunicorn==21.2.0               # Servidor WSGI para deploy em produção
+APScheduler==3.11.0            # Scheduler de tarefas agendadas
 
 # DESENVOLVIMENTO (opcional)
 python-dotenv==1.0.0           # Carregar .env em desenvolvimento
